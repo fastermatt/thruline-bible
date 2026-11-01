@@ -21,6 +21,7 @@ jobs:
           python3 scripts/verify-public-source.py
           python3 scripts/test-suggestions.py
           python3 scripts/test-public-resources.py
+          python3 scripts/test-helloao-pack.py
       - name: Scan for accidental credentials
         shell: bash
         run: |
