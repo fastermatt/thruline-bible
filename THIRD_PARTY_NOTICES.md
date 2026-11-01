@@ -9,7 +9,7 @@ Detailed edition notices and modification statements are preserved under
 |---|---|
 | BSB, KJV, WEB | Scripture-*-copyright.htm; KJV notice includes UK restrictions |
 | Calvin/Pillar conversion | Pillar-Commentary-Data-MIT.txt plus commentary notices |
-| Henry, Gill, Keil/Delitzsch, JFB, Calvin supplement | Exact source records and Public Domain Mark notices |
+| Henry, Gill, Keil/Delitzsch, JFB, Calvin supplement | Digitized by AO Lab's Free Use Bible API (<https://bible.helloao.org>, MIT-licensed API; each text keeps its own notice). Exact source records and Public Domain Mark notices |
 | Canonical cross-reference dataset | CrossReferences-CC-BY-4.0.txt |
 | Hebrew/Greek interlinear and morphology | interlinear-stepbible.txt, CC BY 4.0 attribution and changes |
 | Strong's lexicons | lexicon-greek.txt and lexicon-hebrew.txt |
