@@ -168,6 +168,28 @@ struct ResourceLibraryView: View {
                         }.padding(.vertical, 10)
                         Divider()
                     }
+                    ForEach(CommentaryPack.catalog) { pack in
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text(pack.title).font(.headline)
+                            Text(pack.detail).font(.callout)
+                            Text(pack.terms).font(.caption).foregroundStyle(.secondary)
+                            HStack {
+                                if let installed = books.books.first(where: { $0.id == pack.id }) {
+                                    Label("Installed", systemImage: "checkmark.circle")
+                                    Button("Read") { selectedBook = installed }
+                                } else if books.activeID == pack.id {
+                                    ProgressView().controlSize(.small)
+                                    Text("Downloading & preparing…")
+                                    Button("Cancel") { books.cancel() }
+                                } else {
+                                    Button("Add to library") { books.install(pack) }.disabled(books.activeID != nil)
+                                }
+                                Spacer()
+                                Link("Source & license", destination: pack.sourceURL)
+                            }.font(.callout)
+                        }.padding(.vertical, 10)
+                        Divider()
+                    }
                     Text("Classic Christian works").font(.title3).padding(.top, 6)
                     Text("Optional public-domain editions from Project Gutenberg. More early writers are under Fathers & reception.")
                         .font(.callout).foregroundStyle(.secondary)
@@ -243,21 +265,36 @@ struct ResourceLibraryView: View {
 struct DownloadedPassageNotes: View {
     @ObservedObject var books: ResourceBookLibrary
     let anchor: Anchor?
-    @State private var expanded = false
+    /// Installed downloads whose articles are anchored to passages.
+    static let anchoredBookIDs = ["tyndale-notes"] + CommentaryPack.catalog.map(\.id)
     var body: some View {
-        if let book = books.books.first(where: { $0.id == "tyndale-notes" }), let anchor {
-            let matches = book.articles.filter { $0.anchor?.overlaps(anchor) == true }
-            if !matches.isEmpty {
-                DisclosureGroup("Tyndale study notes · \(matches.count)", isExpanded: $expanded) {
-                    ForEach(matches) { article in
-                        DisclosureGroup(article.title) {
-                            Text(article.body).font(.system(size: 14, design: .serif)).lineSpacing(4).textSelection(.enabled)
-                                .padding(.vertical, 8)
-                        }.font(.callout).padding(.vertical, 4)
-                    }
-                    Text(book.attribution).font(.caption).foregroundStyle(.secondary)
-                }.font(.headline).padding(14)
+        if let anchor {
+            ForEach(Self.anchoredBookIDs, id: \.self) { id in
+                if let book = books.books.first(where: { $0.id == id }) {
+                    PassageNotesGroup(book: book, anchor: anchor)
+                }
             }
+        }
+    }
+}
+
+private struct PassageNotesGroup: View {
+    let book: ResourceBook
+    let anchor: Anchor
+    @State private var expanded = false
+    private var label: String { book.id == "tyndale-notes" ? "Tyndale study notes" : book.title }
+    var body: some View {
+        let matches = book.articles.filter { $0.anchor?.overlaps(anchor) == true }
+        if !matches.isEmpty {
+            DisclosureGroup("\(label) · \(matches.count)", isExpanded: $expanded) {
+                ForEach(matches) { article in
+                    DisclosureGroup(article.title) {
+                        Text(article.body).font(.system(size: 14, design: .serif)).lineSpacing(4).textSelection(.enabled)
+                            .padding(.vertical, 8)
+                    }.font(.callout).padding(.vertical, 4)
+                }
+                Text(book.attribution).font(.caption).foregroundStyle(.secondary)
+            }.font(.headline).padding(14)
         }
     }
 }

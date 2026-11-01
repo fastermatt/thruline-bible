@@ -175,8 +175,8 @@ struct LibraryFocus: Identifiable, Equatable, Sendable {
 /// themselves; nothing is stored separately, so removing a book removes its citations.
 struct LibraryCitationIndex: Sendable {
     static let empty = LibraryCitationIndex(byBibleBook: [:], books: 0)
-    /// Tyndale study notes are already passage-anchored, so they are not rescanned.
-    static let skippedBooks: Set<String> = ["tyndale-notes"]
+    /// Passage-anchored downloads (Tyndale study notes, commentary packs) are not rescanned.
+    static let skippedBooks: Set<String> = Set(["tyndale-notes"] + CommentaryPack.catalog.map(\.id))
     let byBibleBook: [String: [LibraryCitation]]
     let books: Int
     var count: Int { byBibleBook.values.reduce(0) { $0 + $1.count } }

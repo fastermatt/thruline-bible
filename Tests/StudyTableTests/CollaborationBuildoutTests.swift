@@ -34,7 +34,7 @@ final class CollaborationBuildoutTests: XCTestCase {
         for entry in catalog {
             switch entry.route {
             case .included(let id): XCTAssertTrue(ResourceCatalog.resources(in: .included).contains { $0.id == id })
-            case .book(let id): XCTAssertTrue(OpenResource.catalog.contains { $0.id == id } || HistoricWork.catalog.contains { $0.id == id })
+            case .book(let id): XCTAssertTrue(OpenResource.catalog.contains { $0.id == id } || CommentaryPack.catalog.contains { $0.id == id } || HistoricWork.catalog.contains { $0.id == id })
             case .bible(let id): XCTAssertTrue(BibleDownload.catalog.contains { $0.id == id })
             case .historic: XCTAssertEqual(entry.id, "historic")
             }

@@ -28,6 +28,32 @@ struct OpenResource: Identifiable, Sendable {
     ]
 }
 
+/// A prebuilt, hash-pinned commentary pack (see `resource-packs/README.md`). The app never calls the
+/// HelloAO API: it downloads one reviewed file from this repository at a fixed commit and installs
+/// nothing unless the file's size and SHA-256 match the values compiled in here.
+struct CommentaryPack: Identifiable, Sendable {
+    let id: String
+    let title: String
+    let author: String
+    let detail: String
+    let terms: String
+    let sourceURL: URL
+    let sha256: String
+    let bytes: Int
+    let url: URL
+
+    static let host = "raw.githubusercontent.com"
+    static let maximumBytes = 40 * 1024 * 1024
+    static let catalog: [Self] = [
+        .init(id: "adam-clarke", title: "Adam Clarke’s Commentary on the Bible", author: "Adam Clarke",
+              detail: "Verse-by-verse notes from the Wesleyan tradition (1810–1826), about 14,000 entries that follow your passage and can be read and searched offline. The AO Lab digitization has no Deuteronomy, Judges, Psalms, Proverbs, Ecclesiastes, Jeremiah, Joel, Malachi or Matthew, and five book introductions end mid-sentence at the source.",
+              terms: "Public domain (Public Domain Mark 1.0). Digitized and published by AO Lab’s Free Use Bible API; Thruline kept the wording and verse anchors. Inclusion is not doctrinal endorsement.",
+              sourceURL: URL(string: "https://bible.helloao.org/api/c/adam-clarke/books.json")!,
+              sha256: "abd8998295a962803b7c631c9f4bdab8275d1b3c049b69801a44574e72e000c2", bytes: 15684279,
+              url: URL(string: "https://raw.githubusercontent.com/fastermatt/thruline-bible/b62f6fdc7fa99404c69ac465b7f227fdb2dd153c/resource-packs/adam-clarke.json")!)
+    ]
+}
+
 enum ResourceBookError: LocalizedError {
     case invalid(String)
     var errorDescription: String? { if case .invalid(let text) = self { return text }; return nil }
@@ -92,6 +118,48 @@ private final class ResourceRedirectPolicy: NSObject, URLSessionTaskDelegate, Se
     func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
                     newRequest request: URLRequest, completionHandler: @escaping @Sendable (URLRequest?) -> Void) {
         completionHandler(request.url?.scheme == "https" && request.url?.host == "tyndaleopenresources.com" ? request : nil)
+    }
+}
+
+private final class CommentaryPackRedirectPolicy: NSObject, URLSessionTaskDelegate, Sendable {
+    func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
+                    newRequest request: URLRequest, completionHandler: @escaping @Sendable (URLRequest?) -> Void) {
+        completionHandler(request.url?.scheme == "https" && request.url?.host == CommentaryPack.host ? request : nil)
+    }
+}
+
+enum CommentaryPackFiles {
+    static func fetch(_ pack: CommentaryPack) async throws -> Data {
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = 45; config.timeoutIntervalForResource = 300
+        let session = URLSession(configuration: config, delegate: CommentaryPackRedirectPolicy(), delegateQueue: nil)
+        defer { session.invalidateAndCancel() }
+        let (bytes, response) = try await session.bytes(from: pack.url)
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200,
+              response.url?.host == pack.url.host, response.url?.scheme == "https",
+              response.expectedContentLength <= Int64(CommentaryPack.maximumBytes) else {
+            throw ResourceBookError.invalid("The download is unavailable. Please try again later.")
+        }
+        var data = Data()
+        for try await byte in bytes {
+            try Task.checkCancellation()
+            guard data.count < CommentaryPack.maximumBytes else { throw ResourceBookError.invalid("The download exceeded its size limit.") }
+            data.append(byte)
+        }
+        return data
+    }
+
+    /// Refuses anything that is not byte-for-byte the pack this version of Thruline was built against.
+    static func convert(_ pack: CommentaryPack, data: Data) throws -> ResourceBook {
+        let checksum = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        guard data.count == pack.bytes, checksum == pack.sha256 else {
+            throw ResourceBookError.invalid("The file is not the version this copy of Thruline expects. Nothing was installed; update Thruline and try again.")
+        }
+        guard let book = try? JSONDecoder().decode(ResourceBook.self, from: data), book.id == pack.id,
+              !book.articles.isEmpty, Set(book.articles.map(\.id)).count == book.articles.count else {
+            throw ResourceBookError.invalid("The resource did not pass validation.")
+        }
+        return book
     }
 }
 
@@ -248,6 +316,12 @@ final class ResourceBookLibrary: ObservableObject {
         installBook(id: resource.id, title: resource.title, temporaryExtension: "zip",
                     fetch: { try await ResourceBookFiles.fetch(resource) },
                     convert: { try ResourceBookFiles.convert(resource, data: $0, temporary: $1) })
+    }
+
+    func install(_ pack: CommentaryPack) {
+        installBook(id: pack.id, title: pack.title, temporaryExtension: "json",
+                    fetch: { try await CommentaryPackFiles.fetch(pack) },
+                    convert: { data, _ in try CommentaryPackFiles.convert(pack, data: data) })
     }
 
     /// One download at a time: fetch, convert off the main actor in a private temporary file,

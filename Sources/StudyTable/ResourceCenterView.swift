@@ -45,7 +45,7 @@ private struct ResourceCenterContent: View {
             Section(ResourceAccessGroup.downloads.rawValue) {
                 ForEach(ResourceCatalog.resources(in: .downloads)) { resource in
                     resourceRow(resource)
-                    if resource.id == "tyndale" {
+                    if resource.id == "tyndale" || resource.id == "commentary-packs" {
                         Button("Add free study resources") { openWindow(id: "add-resources") }
                     } else if resource.id == "offline-bibles" {
                         ForEach(BibleDownload.catalog) { edition in

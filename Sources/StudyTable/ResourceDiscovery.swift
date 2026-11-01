@@ -2,7 +2,7 @@ import SwiftUI
 
 /// A discoverable route, not a second download catalogue. Actions resolve existing IDs.
 struct DiscoverableResource: Identifiable, Sendable {
-    enum Kind: String, CaseIterable { case all = "All resources", bible = "Bibles", study = "Study tools", notes = "Notes & dictionaries", historic = "Historic works" }
+    enum Kind: String, CaseIterable { case all = "All resources", bible = "Bibles", study = "Study tools", commentary = "Commentaries", notes = "Notes & dictionaries", historic = "Historic works" }
     enum Route: Sendable { case included(String), book(String), bible(String), historic }
     let id: String
     let title: String
@@ -14,7 +14,17 @@ struct DiscoverableResource: Identifiable, Sendable {
     let terms: String
     let source: URL
 
-    static var catalog: [Self] {
+    /// Optional commentary packs. Kept apart from `baseCatalog` so neither array expression grows too complex to type-check.
+    private static var commentaryEntries: [Self] {
+        CommentaryPack.catalog.map {
+            Self(id: $0.id, title: $0.title, detail: $0.detail, language: "English", kind: .commentary,
+                 included: false, route: .book($0.id), terms: $0.terms, source: $0.sourceURL)
+        }
+    }
+
+    static var catalog: [Self] { baseCatalog + commentaryEntries }
+
+    private static var baseCatalog: [Self] {
         ResourceCatalog.resources(in: .included).map {
             Self(id: $0.id, title: $0.title, detail: $0.detail, language: "English", kind: $0.id == "scripture" ? .bible : .study,
                  included: true, route: .included($0.id), terms: $0.rights, source: $0.sourceURL)
@@ -132,6 +142,9 @@ struct ResourceDiscoveryView: View {
                 HStack { ProgressView().controlSize(.small); Button("Cancel") { books.cancel() } }
             } else if let resource = OpenResource.catalog.first(where: { $0.id == id }) {
                 Button { books.install(resource) } label: { Label("Add", systemImage: "plus") }.disabled(books.activeID != nil)
+                    .accessibilityLabel("Add \(entry.title)")
+            } else if let pack = CommentaryPack.catalog.first(where: { $0.id == id }) {
+                Button { books.install(pack) } label: { Label("Add", systemImage: "plus") }.disabled(books.activeID != nil)
                     .accessibilityLabel("Add \(entry.title)")
             } else if let work = HistoricWork.catalog.first(where: { $0.id == id }) {
                 Button { books.install(work) } label: { Label("Add", systemImage: "plus") }.disabled(books.activeID != nil)

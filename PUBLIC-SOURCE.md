@@ -55,3 +55,12 @@ catalogue: download each `https://www.gutenberg.org/cache/epub/<n>/pg<n>.epub` i
 folder, then run `STUDYTABLE_WRITE_CITATION_INDEX=<folder> swift test --filter
 CatalogSuggestionTests/testWriteIndex` and record it with
 `python3 scripts/verify-public-source.py --write-manifest`.
+
+## Resource packs (0.23)
+
+`resource-packs/` holds prebuilt optional downloads. Unlike the study snapshots above, a pack
+is reproducible from its upstream: `python3 scripts/build-helloao-pack.py <id>` fetches the
+source chapters, and `--check` rebuilds from cached chapters and compares. The manifest records the
+hash of every raw chapter, so a change at the source shows up as a diff rather than silently.
+`python3 scripts/test-helloao-pack.py` runs in CI. This is the pinned-fetcher pattern the
+reproducibility section asks contributors to extend to the remaining study inputs.
