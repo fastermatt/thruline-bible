@@ -139,6 +139,17 @@ withholds mixed-rights HCF excerpts, private inputs and unverified legacy textur
 The separate Apostolic Fathers reader remains included. See [PUBLIC-SOURCE.md](PUBLIC-SOURCE.md)
 for exact scope, regional rights notices and the limits of corpus regeneration.
 
+## Thanks
+
+Thruline stands on open work by others. The Matthew Henry, John Gill, Keil & Delitzsch,
+Jamieson-Fausset-Brown and Calvin commentaries are digitized and published by
+[AO Lab](https://helloao.org) through the
+[Free Use Bible API](https://bible.helloao.org), a 501(c)(3) nonprofit project. Cross-references
+come from the Treasury of Scripture Knowledge, original-language data from STEPBible
+(Tyndale House), and the Berean Standard Bible and World English Bible texts from eBible.org.
+Adam Clarke's commentary is an optional download built from the same source. Each work keeps its
+own notice; see [third-party notices](THIRD_PARTY_NOTICES.md).
+
 Source quotations, editorial interpretation and historical reception are distinct.
 The app does not declare one fixed confessional identity; the reader can choose a
 comparison lens. Source-based cautions remain visible. Disagreement with a chosen
